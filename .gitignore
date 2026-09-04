@@ -1,0 +1,30 @@
+# Environment & Secrets
+.env
+.env.local
+*.env
+
+# Maven & Java Build Output
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/*.log
+.mvn/
+
+# Node.js & React Build Output
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+.npmrc
+
+# IDE & Editor Files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Log files
+*.log
