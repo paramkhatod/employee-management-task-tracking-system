@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { dashboardService } from '../services/dashboardService';
+import { reportService } from '../services/reportService';
+import { useAuth } from '../context/AuthContext';
 import StatusBadge from '../components/StatusBadge';
 import PriorityBadge from '../components/PriorityBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { CheckSquare, Clock, CheckCircle2, Calendar } from 'lucide-react';
+import { CheckSquare, Clock, CheckCircle2, Calendar, FileText } from 'lucide-react';
 
 const EmployeeDashboard = () => {
+  const { user } = useAuth();
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,14 +29,34 @@ const EmployeeDashboard = () => {
     }
   };
 
+  const handleDownloadSummaryPdf = async () => {
+    if (!user?.id) return;
+    try {
+      await reportService.downloadEmployeeSummaryPdf(user.id);
+    } catch (err) {
+      alert('Failed to download employee performance summary sheet PDF.');
+    }
+  };
+
   if (loading) return <LoadingSpinner message="Loading employee dashboard..." />;
   if (error) return <div style={{ color: '#ef4444', padding: '2rem' }}>{error}</div>;
 
   return (
     <div>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a' }}>Employee Dashboard</h1>
-        <p style={{ color: '#64748b' }}>Overview of your assigned workload and upcoming task deadlines.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a' }}>Employee Dashboard</h1>
+          <p style={{ color: '#64748b' }}>Overview of your assigned workload and upcoming task deadlines.</p>
+        </div>
+
+        <button
+          onClick={handleDownloadSummaryPdf}
+          className="btn btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#0284c7' }}
+        >
+          <FileText size={16} />
+          <span>Download My Summary Sheet (PDF)</span>
+        </button>
       </div>
 
       <div className="stats-grid">

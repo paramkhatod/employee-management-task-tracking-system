@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckSquare, Edit3, AlertCircle } from 'lucide-react';
+import { X, CheckSquare, Edit3, AlertCircle, Sparkles } from 'lucide-react';
 import { taskService } from '../services/taskService';
 import { employeeService } from '../services/employeeService';
+import { aiService } from '../services/aiService';
 
 const TaskFormModal = ({ isOpen, onClose, taskToEdit, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const TaskFormModal = ({ isOpen, onClose, taskToEdit, onSuccess }) => {
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -62,6 +64,31 @@ const TaskFormModal = ({ isOpen, onClose, taskToEdit, onSuccess }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleAiBreakdown = async () => {
+    if (!formData.title) {
+      setError('Please enter a Task Title first to let Gemini AI generate sub-tasks.');
+      return;
+    }
+    setError('');
+    setAiLoading(true);
+
+    try {
+      const res = await aiService.generateTaskBreakdown(formData.title, formData.description);
+      let formattedDescription = formData.description ? formData.description + '\n\n' : '';
+      formattedDescription += `--- AI Sub-Task Decomposition ---\n${res.summary || ''}\n`;
+      if (res.subTasks && res.subTasks.length > 0) {
+        res.subTasks.forEach((item, idx) => {
+          formattedDescription += `${idx + 1}. [ ] ${item.title} (~${item.estimatedHours}h, Priority: ${item.suggestedPriority})\n`;
+        });
+      }
+      setFormData((prev) => ({ ...prev, description: formattedDescription.trim() }));
+    } catch (err) {
+      setError('AI breakdown request failed. Please check Gemini API configuration.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -90,7 +117,7 @@ const TaskFormModal = ({ isOpen, onClose, taskToEdit, onSuccess }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '600px' }}>
+      <div className="modal-content" style={{ maxWidth: '650px' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {taskToEdit ? <Edit3 size={20} color="#4f46e5" /> : <CheckSquare size={20} color="#4f46e5" />}
@@ -112,7 +139,27 @@ const TaskFormModal = ({ isOpen, onClose, taskToEdit, onSuccess }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Task Title *</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+              <label style={{ margin: 0 }}>Task Title *</label>
+              <button
+                type="button"
+                onClick={handleAiBreakdown}
+                disabled={aiLoading}
+                className="btn btn-outline"
+                style={{
+                  padding: '0.25rem 0.6rem',
+                  fontSize: '0.75rem',
+                  borderColor: '#818cf8',
+                  color: '#4f46e5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem'
+                }}
+              >
+                <Sparkles size={13} color="#4f46e5" />
+                {aiLoading ? 'Decomposing with Gemini...' : '✨ Generate AI Sub-tasks'}
+              </button>
+            </div>
             <input
               type="text"
               name="title"
@@ -129,7 +176,7 @@ const TaskFormModal = ({ isOpen, onClose, taskToEdit, onSuccess }) => {
             <textarea
               name="description"
               className="form-textarea"
-              rows={3}
+              rows={5}
               placeholder="Detailed description of requirements..."
               value={formData.description}
               onChange={handleChange}

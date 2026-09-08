@@ -61,7 +61,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/h2-console/**"
+                                "/h2-console/**",
+                                "/ws/**"
                         ).permitAll()
                         .requestMatchers("/api/dashboard/admin").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/employees/**").hasRole("ADMIN")

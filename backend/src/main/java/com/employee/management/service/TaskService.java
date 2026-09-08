@@ -30,10 +30,18 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final EmployeeRepository employeeRepository;
+    private final AuditLogService auditLogService;
+    private final EmailService emailService;
+    private final NotificationService notificationService;
 
-    public TaskService(TaskRepository taskRepository, EmployeeRepository employeeRepository) {
+    public TaskService(TaskRepository taskRepository, EmployeeRepository employeeRepository,
+                       AuditLogService auditLogService, EmailService emailService,
+                       NotificationService notificationService) {
         this.taskRepository = taskRepository;
         this.employeeRepository = employeeRepository;
+        this.auditLogService = auditLogService;
+        this.emailService = emailService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -133,6 +141,29 @@ public class TaskService {
                 .build();
 
         Task savedTask = taskRepository.save(task);
+
+        // Trigger Audit Log
+        auditLogService.logActivity("TASK_CREATED", "TASK", savedTask.getId(), "ADMIN",
+                "Created task: '" + savedTask.getTitle() + "' assigned to " + employee.getFirstName() + " " + employee.getLastName());
+
+        // Trigger Email Notification
+        emailService.sendTaskAssignmentEmail(
+                employee.getEmail(),
+                employee.getFirstName() + " " + employee.getLastName(),
+                savedTask.getTitle(),
+                savedTask.getPriority().name(),
+                savedTask.getDueDate() != null ? savedTask.getDueDate().toString() : "Not specified"
+        );
+
+        // Trigger WebSocket Live Notification
+        Long targetUserId = employee.getUser() != null ? employee.getUser().getId() : null;
+        notificationService.sendTaskNotification(
+                targetUserId,
+                "New Task Assigned",
+                "You have been assigned a new task: " + savedTask.getTitle(),
+                "TASK_ASSIGNED"
+        );
+
         return TaskMapper.toDto(savedTask);
     }
 
@@ -156,6 +187,10 @@ public class TaskService {
         task.setDueDate(request.getDueDate());
 
         Task updatedTask = taskRepository.save(task);
+
+        auditLogService.logActivity("TASK_UPDATED", "TASK", updatedTask.getId(), "ADMIN",
+                "Updated task details for: '" + updatedTask.getTitle() + "'");
+
         return TaskMapper.toDto(updatedTask);
     }
 
@@ -185,6 +220,20 @@ public class TaskService {
 
         task.setStatus(newStatus);
         Task updatedTask = taskRepository.save(task);
+
+        // Trigger Audit Log
+        auditLogService.logActivity("TASK_STATUS_UPDATED", "TASK", updatedTask.getId(), currentUser.getUsername(),
+                "Task status changed from " + currentStatus + " to " + newStatus + " for task: '" + updatedTask.getTitle() + "'");
+
+        // Trigger WebSocket Live Notification
+        Long recipientUserId = updatedTask.getAssignedEmployee().getUser() != null ? updatedTask.getAssignedEmployee().getUser().getId() : null;
+        notificationService.sendTaskNotification(
+                recipientUserId,
+                "Task Status Updated",
+                "Task '" + updatedTask.getTitle() + "' status changed to " + newStatus,
+                "TASK_UPDATED"
+        );
+
         return TaskMapper.toDto(updatedTask);
     }
 
@@ -193,5 +242,7 @@ public class TaskService {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Task", "id", id));
         taskRepository.delete(task);
+
+        auditLogService.logActivity("TASK_DELETED", "TASK", id, "ADMIN", "Deleted task #" + id + ": '" + task.getTitle() + "'");
     }
 }

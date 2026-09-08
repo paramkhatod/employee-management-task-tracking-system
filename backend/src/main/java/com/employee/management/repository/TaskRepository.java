@@ -15,6 +15,8 @@ import java.util.List;
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificationExecutor<Task> {
 
+    List<Task> findByAssignedEmployeeId(Long employeeId);
+
     Page<Task> findByAssignedEmployeeId(Long employeeId, Pageable pageable);
 
     Page<Task> findByAssignedEmployeeUserId(Long userId, Pageable pageable);

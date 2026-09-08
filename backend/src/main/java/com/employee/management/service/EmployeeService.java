@@ -31,11 +31,14 @@ public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
-    public EmployeeService(EmployeeRepository employeeRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public EmployeeService(EmployeeRepository employeeRepository, UserRepository userRepository,
+                           PasswordEncoder passwordEncoder, AuditLogService auditLogService) {
         this.employeeRepository = employeeRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -117,6 +120,10 @@ public class EmployeeService {
                 .build();
 
         Employee savedEmployee = employeeRepository.save(employee);
+
+        auditLogService.logActivity("EMPLOYEE_CREATED", "EMPLOYEE", savedEmployee.getId(), "ADMIN",
+                "Created employee profile for: " + savedEmployee.getFirstName() + " " + savedEmployee.getLastName() + " (" + savedEmployee.getEmail() + ")");
+
         return EmployeeMapper.toDto(savedEmployee);
     }
 
@@ -139,6 +146,10 @@ public class EmployeeService {
         }
 
         Employee updatedEmployee = employeeRepository.save(employee);
+
+        auditLogService.logActivity("EMPLOYEE_UPDATED", "EMPLOYEE", updatedEmployee.getId(), "ADMIN",
+                "Updated employee details for: " + updatedEmployee.getFirstName() + " " + updatedEmployee.getLastName());
+
         return EmployeeMapper.toDto(updatedEmployee);
     }
 
@@ -153,6 +164,10 @@ public class EmployeeService {
         }
 
         Employee updatedEmployee = employeeRepository.save(employee);
+
+        auditLogService.logActivity("EMPLOYEE_DEACTIVATED", "EMPLOYEE", updatedEmployee.getId(), "ADMIN",
+                "Deactivated employee: " + updatedEmployee.getFirstName() + " " + updatedEmployee.getLastName());
+
         return EmployeeMapper.toDto(updatedEmployee);
     }
 }

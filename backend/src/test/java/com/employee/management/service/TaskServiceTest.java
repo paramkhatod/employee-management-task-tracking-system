@@ -35,6 +35,15 @@ class TaskServiceTest {
     @Mock
     private EmployeeRepository employeeRepository;
 
+    @Mock
+    private AuditLogService auditLogService;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private TaskService taskService;
 

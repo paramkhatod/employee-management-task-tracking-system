@@ -37,6 +37,9 @@ class EmployeeServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     @InjectMocks
     private EmployeeService employeeService;
 

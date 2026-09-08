@@ -18,3 +18,10 @@ app:
   jwt:
     secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
     expiration-milliseconds: 3600000
+  gemini:
+    api-key: 
+    model: gemini-1.5-flash
+  mail:
+    from: noreply@test.com
+    enabled: false
+
