@@ -12,7 +12,7 @@ const Navbar = () => {
 
   useEffect(() => {
     // Establish WebSocket connection via SockJS & STOMP
-    const socket = new SockJS('http://localhost:8080/ws');
+    const socket = new SockJS('/ws');
     const stompClient = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
