@@ -94,7 +94,8 @@ public class PdfReportService {
     @Transactional(readOnly = true)
     public ByteArrayInputStream generateEmployeeSummaryReport(Long employeeId) {
         Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+                .or(() -> employeeRepository.findByUserId(employeeId))
+                .orElseThrow(() -> new RuntimeException("Employee not found for ID: " + employeeId));
 
         Document document = new Document(PageSize.A4, 36, 36, 36, 36);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -124,7 +125,7 @@ public class PdfReportService {
             document.add(infoTable);
 
             // Task List
-            List<Task> tasks = taskRepository.findByAssignedEmployeeId(employeeId);
+            List<Task> tasks = taskRepository.findByAssignedEmployeeId(employee.getId());
 
             Paragraph taskHeading = new Paragraph("Assigned Tasks (" + tasks.size() + ")", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14));
             taskHeading.setSpacingAfter(10);
